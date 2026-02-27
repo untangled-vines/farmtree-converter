@@ -23,16 +23,11 @@ def load_csv_to_db(df):
     conn = get_connection()
     cur = conn.cursor()
     df.columns = [c.lower().replace(' ', '_') for c in df.columns]
-    
-    # Convert all columns to string first to avoid float issues
     df = df.astype(str)
-    # Replace 'nan' strings with None
     df = df.replace('nan', None)
-    # Fix float integers e.g. 2025.0 -> 2025
     for col in df.columns:
         if df[col] is not None:
             df[col] = df[col].apply(lambda x: x.split('.')[0] if x and '.' in str(x) and str(x).split('.')[1] == '0' else x)
-
     cur.execute(f"TRUNCATE {DB_SCHEMA}.prodai")
     cols = ','.join([f'"{c}"' for c in df.columns])
     placeholders = ','.join(['%s'] * len(df.columns))
@@ -42,20 +37,20 @@ def load_csv_to_db(df):
     conn.commit()
     cur.close()
     conn.close()
+
 def get_transformed_data():
     conn = get_connection()
     df = pd.read_sql(f"SELECT * FROM {DB_SCHEMA}.prodai_transformed", conn, dtype=str)
     conn.close()
-    # Replace None and nan with empty string
     df = df.fillna('')
     df = df.replace('None', '')
     df = df.replace('nan', '')
-    # Fix float integers e.g. 136.0 -> 136
     df = df.apply(lambda col: col.map(lambda x: x.split('.')[0] if x and '.' in x and x.split('.')[1] == '0' else x))
     return df
+
 def df_to_csv(df):
     output = io.StringIO()
-    df.to_csv(output, index=False, quoting=0)  # quoting=0 = QUOTE_MINIMAL
+    df.to_csv(output, index=False, quoting=0)
     return output.getvalue().encode('utf-8')
 
 # --- UI ---
@@ -69,11 +64,10 @@ if uploaded_file:
     if st.button("Convert"):
         with st.spinner("Loading data..."):
             try:
-                # Auto-detect delimiter
-		sample = uploaded_file.read(2048).decode('utf-8')
-		uploaded_file.seek(0)
-		delimiter = ';' if sample.count(';') > sample.count(',') else ','
-		df_input = pd.read_csv(uploaded_file, delimiter=delimiter, encoding='utf-8')
+                sample = uploaded_file.read(2048).decode('utf-8')
+                uploaded_file.seek(0)
+                delimiter = ';' if sample.count(';') > sample.count(',') else ','
+                df_input = pd.read_csv(uploaded_file, delimiter=delimiter, encoding='utf-8')
                 st.success(f"Loaded {len(df_input)} farmer records")
             except Exception as e:
                 st.error(f"Failed to read CSV: {e}")
