@@ -64,6 +64,9 @@ def safe_null(v):
     return v
     
 # Function to load CSV data into the database
+import pandas as pd
+import math
+
 def load_csv_to_db(df):
     conn = get_connection()
     cur = conn.cursor()
@@ -72,8 +75,8 @@ def load_csv_to_db(df):
     df = df.copy()
     df.columns = [c.lower().replace(' ', '_') for c in df.columns]
 
-    # Replace NaN with None (Postgres NULL) at the DataFrame level first
-    df = df.applymap(lambda x: None if (isinstance(x, float) and math.isnan(x)) else x)
+    # Replace NaN with None (Postgres NULL) at the DataFrame level first using apply
+    df = df.apply(lambda col: col.apply(lambda x: None if isinstance(x, float) and math.isnan(x) else x))
 
     # Clear existing data in the target table
     cur.execute(f"TRUNCATE {DB_SCHEMA}.prodai")
