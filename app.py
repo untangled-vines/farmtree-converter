@@ -19,15 +19,27 @@ def get_connection():
         password=DB_PASSWORD
     )
 
+def strip_dot_zero(x):
+    """Strip trailing .0 from integer-like strings, leave real decimals (e.g. 0.5) intact."""
+    s = str(x) if x is not None else ''
+    if '.' in s:
+        parts = s.split('.')
+        if parts[1] == '0':
+            return parts[0]
+    return s
+
 def load_csv_to_db(df):
     conn = get_connection()
     cur = conn.cursor()
+    df = df.copy()
     df.columns = [c.lower().replace(' ', '_') for c in df.columns]
     df = df.astype(str)
     df = df.replace('nan', None)
+
+    # Strip .0 only from cells that are truly integer-like (e.g. "1.0" → "1")
     for col in df.columns:
-        if df[col] is not None:
-            df[col] = df[col].apply(lambda x: x.split('.')[0] if x and '.' in str(x) and str(x).split('.')[1] == '0' else x)
+        df[col] = df[col].apply(lambda x: strip_dot_zero(x) if x is not None else x)
+
     cur.execute(f"TRUNCATE {DB_SCHEMA}.prodai")
     cols = ','.join([f'"{c}"' for c in df.columns])
     placeholders = ','.join(['%s'] * len(df.columns))
@@ -40,12 +52,20 @@ def load_csv_to_db(df):
 
 def get_transformed_data():
     conn = get_connection()
-    df = pd.read_sql(f"SELECT * FROM {DB_SCHEMA}.prodai_transformed", conn, dtype=str)
+    # Use a cursor + fetchall instead of pd.read_sql to avoid the psycopg2 UserWarning
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM {DB_SCHEMA}.prodai_transformed")
+    rows = cur.fetchall()
+    cols = [desc[0] for desc in cur.description]
+    cur.close()
     conn.close()
-    df = df.fillna('')
-    df = df.replace('None', '')
-    df = df.replace('nan', '')
-    df = df.apply(lambda col: col.map(lambda x: x.split('.')[0] if x and '.' in x and x.split('.')[1] == '0' else x))
+
+    df = pd.DataFrame(rows, columns=cols).astype(str)
+    df = df.replace({'None': '', 'nan': '', '<NA>': ''})
+
+    # Safely strip .0 from integer-like values, preserve real decimals like 0.5
+    df = df.apply(lambda col: col.map(strip_dot_zero))
+
     return df
 
 def df_to_csv(df):
@@ -58,7 +78,6 @@ st.title("🌱 Acorn → FarmTree Converter")
 st.write("Upload your Acorn CSV export to convert it to FarmTree multiplot format.")
 
 uploaded_file = st.file_uploader("Upload Acorn CSV", type="csv")
-
 if uploaded_file:
     st.info("File uploaded — click Convert to process it.")
     if st.button("Convert"):
