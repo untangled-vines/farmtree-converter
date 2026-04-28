@@ -28,9 +28,9 @@ def strip_dot_zero(x):
     s = str(x) if x is not None else ''
     if '.' in s:
         parts = s.split('.')
-        if parts[1] == '0':
-            return parts[0]
-    return s
+        if parts[1] == '0' and parts[0].lstrip('-').isdigit():
+            return parts[0]  # Strip .0 from integer-like values
+    return s  # Leave real decimal values (e.g. 0.5) intact
 
 # Function to safely convert a value to None if it represents a null/NaN
 def safe_null(v):
@@ -40,9 +40,9 @@ def safe_null(v):
     if isinstance(v, float):
         if math.isnan(v):
             return None
-        # Convert float to int if it's a whole number (e.g. 2025.0 -> 2025)
+        # Convert float to int only if it's a whole number (e.g. 2025.0 -> 2025)
         if v == int(v):
-            return int(v)
+            return int(v)  # Leave decimal values (like 0.5) as float
         return v
     if isinstance(v, str):
         if v.strip().lower() in ('nan', 'none', 'nat', ''):
@@ -51,7 +51,7 @@ def safe_null(v):
         if '.' in v:
             parts = v.split('.')
             if parts[1] == '0' and parts[0].lstrip('-').isdigit():
-                return int(parts[0])
+                return int(parts[0])  # Convert to int if it looks like a whole number
         return v
     return v
 # Function to load CSV data into the database
