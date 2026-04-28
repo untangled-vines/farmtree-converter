@@ -22,16 +22,6 @@ def get_connection():
         password=DB_PASSWORD
     )
 
-# Function to clean integer-like string values (strip .0)
-def strip_dot_zero(x):
-    """Strip trailing .0 from integer-like strings, leave real decimals (e.g. 0.5) intact."""
-    s = str(x) if x is not None else ''
-    if '.' in s:
-        parts = s.split('.')
-        if parts[1] == '0':
-            return parts[0]
-    return s
-
 # Function to safely convert a value to None if it represents a null/NaN
 def safe_null(v):
     """Return None for any NaN/null variant, strip .0 from integer-like floats, otherwise return value as-is."""
