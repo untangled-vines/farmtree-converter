@@ -47,7 +47,7 @@ def safe_null(v):
         return None
     if isinstance(v, float):
         if math.isnan(v):  # Handle NaN explicitly
-            return None
+            return None  # Return None instead of NaN
         # Convert float to int only if it's a whole number (e.g., 2025.0 -> 2025)
         if v == int(v):
             return int(v)  # Leave decimal values (like 0.5) as float
