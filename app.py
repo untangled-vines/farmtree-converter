@@ -80,14 +80,14 @@ def load_csv_to_db(df):
     placeholders = ','.join(['%s'] * len(df.columns))
 
     for _, row in df.iterrows():
-        
-        # Apply strip_dot_zero logic to each column depending on its name
+        # Apply strip_dot_zero and safe_null logic to each column depending on its name
         values = [
-            strip_dot_zero(v, 'year') if 'planting_year' in col and col.startswith('plots') else strip_dot_zero(v)
+            safe_null(strip_dot_zero(v, 'year'), 'year') if 'planting_year' in col and col.startswith('plots') 
+            else safe_null(strip_dot_zero(v), col)
             for col, v in zip(df.columns, row)
         ]
 
-        # Execute the insert query
+        # Execute the insert query with the processed values
         cur.execute(
             f"INSERT INTO {DB_SCHEMA}.prodai ({cols}) VALUES ({placeholders})",
             values
