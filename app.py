@@ -24,15 +24,22 @@ def get_connection():
 
 # Function to clean integer-like string values (strip .0)
 def strip_dot_zero(x):
-    """Strip trailing .0 from integer-like strings, leave real decimals (e.g. 0.5) intact."""
+    """Strip trailing .0 from integer-like floats, leave real decimals (e.g. 0.5) intact."""
+    # Ensure we work with a string if the value is not None
     s = str(x) if x is not None else ''
+    
+    # Check if the value contains a decimal point
     if '.' in s:
+        # Split into integer and decimal parts
         parts = s.split('.')
-        # Only strip .0 if the value is essentially an integer
-        if parts[1] == '0' and parts[0].lstrip('-').isdigit() and float(parts[0]) == int(float(parts[0])):
-            return parts[0]  # Strip .0 from integer-like values
-    return s  # Leave real decimal values (e.g. 0.5) intact
-
+        
+        # If the decimal part is '0' and the integer part is numeric (not negative and no other decimals), strip .0
+        if parts[1] == '0' and parts[0].isdigit():
+            return parts[0]  # Strip .0 from integer-like values (e.g. 5.0 -> 5)
+    
+    # Return the original value if it's a decimal (e.g. 0.5, 2.5, etc.)
+    return s
+    
 # Function to safely convert a value to None if it represents a null/NaN
 def safe_null(v):
     """Return None for any NaN/null variant, strip .0 from integer-like floats, otherwise return value as-is."""
