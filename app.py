@@ -64,9 +64,6 @@ def safe_null(v):
     return v
     
 # Function to load CSV data into the database
-import pandas as pd
-import math
-
 def load_csv_to_db(df):
     conn = get_connection()
     cur = conn.cursor()
@@ -86,7 +83,7 @@ def load_csv_to_db(df):
         
         # Apply strip_dot_zero logic to each column depending on its name
         values = [
-            strip_dot_zero(v, 'year') if 'year' in col.lower() else strip_dot_zero(v)
+            strip_dot_zero(v, 'year') if 'planting_year' in col and col.startswith('plots') else strip_dot_zero(v)
             for col, v in zip(df.columns, row)
         ]
 
@@ -115,15 +112,6 @@ def get_transformed_data():
     df = df.replace({'None': '', 'nan': '', '<NA>': ''})
 
     # No need to apply strip_dot_zero function here since data is already cleaned on insert
-    return df
-
-    # Create dataframe and clean-up
-    df = pd.DataFrame(rows, columns=cols).astype(str)
-    df = df.replace({'None': '', 'nan': '', '<NA>': ''})
-
-    # Safely strip .0 from integer-like values, preserve real decimals like 0.5
-    df = df.apply(lambda col: col.map(strip_dot_zero))
-
     return df
 
 # Function to convert dataframe to CSV format
