@@ -23,7 +23,7 @@ def get_connection():
     )
 
 # Function to clean integer-like string values (strip .0)
-def strip_dot_zero(x):
+def strip_dot_zero(x, column_name=None):
     """Strip trailing .0 from integer-like floats, leave real decimals (e.g. 0.5) intact."""
     # Ensure we work with a string if the value is not None
     s = str(x) if x is not None else ''
@@ -84,8 +84,10 @@ def load_csv_to_db(df):
     for _, row in df.iterrows():
         # Apply safe_null to handle any NaN variants and clean the year-like columns
         values = [safe_null(v) for v in row]
-        # Apply the strip_dot_zero function for specific columns during the insert (like year-related columns)
-        values = [strip_dot_zero(v, 'year') for v in values]  # Apply only to year fields
+        
+        # Apply strip_dot_zero only for year-like columns (you can adjust this as necessary for other columns)
+        values = [strip_dot_zero(v, 'year') if 'year' in row.index else strip_dot_zero(v) for v in values]
+        
         cur.execute(
             f"INSERT INTO {DB_SCHEMA}.prodai ({cols}) VALUES ({placeholders})",
             values
@@ -94,7 +96,7 @@ def load_csv_to_db(df):
     conn.commit()
     cur.close()
     conn.close()
-
+    
 # Function to fetch transformed data from the database
 def get_transformed_data():
     conn = get_connection()
