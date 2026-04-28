@@ -82,8 +82,10 @@ def load_csv_to_db(df):
     placeholders = ','.join(['%s'] * len(df.columns))
 
     for _, row in df.iterrows():
-        # Apply safe_null to catch any remaining NaN variants (float nan, string 'nan', etc.)
+        # Apply safe_null to handle any NaN variants and clean the year-like columns
         values = [safe_null(v) for v in row]
+        # Apply the strip_dot_zero function for specific columns during the insert (like year-related columns)
+        values = [strip_dot_zero(v, 'year') for v in values]  # Apply only to year fields
         cur.execute(
             f"INSERT INTO {DB_SCHEMA}.prodai ({cols}) VALUES ({placeholders})",
             values
@@ -102,6 +104,13 @@ def get_transformed_data():
     cols = [desc[0] for desc in cur.description]
     cur.close()
     conn.close()
+
+    # Create dataframe from the fetched data
+    df = pd.DataFrame(rows, columns=cols).astype(str)
+    df = df.replace({'None': '', 'nan': '', '<NA>': ''})
+
+    # No need to apply strip_dot_zero function here since data is already cleaned on insert
+    return df
 
     # Create dataframe and clean-up
     df = pd.DataFrame(rows, columns=cols).astype(str)
