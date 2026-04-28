@@ -34,15 +34,26 @@ def strip_dot_zero(x):
 
 # Function to safely convert a value to None if it represents a null/NaN
 def safe_null(v):
-    """Return None for any NaN/null variant, otherwise return the value as-is."""
+    """Return None for any NaN/null variant, strip .0 from integer-like floats, otherwise return value as-is."""
     if v is None:
         return None
-    if isinstance(v, float) and math.isnan(v):
-        return None
-    if isinstance(v, str) and v.strip().lower() in ('nan', 'none', 'nat', ''):
-        return None
+    if isinstance(v, float):
+        if math.isnan(v):
+            return None
+        # Convert float to int if it's a whole number (e.g. 2025.0 -> 2025)
+        if v == int(v):
+            return int(v)
+        return v
+    if isinstance(v, str):
+        if v.strip().lower() in ('nan', 'none', 'nat', ''):
+            return None
+        # Handle string "2025.0" -> "2025"
+        if '.' in v:
+            parts = v.split('.')
+            if parts[1] == '0' and parts[0].lstrip('-').isdigit():
+                return int(parts[0])
+        return v
     return v
-
 # Function to load CSV data into the database
 def load_csv_to_db(df):
     conn = get_connection()
