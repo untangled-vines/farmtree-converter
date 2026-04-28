@@ -41,6 +41,8 @@ def strip_dot_zero(x, column_name=None):
     return s
     
 # Function to safely convert a value to None if it represents a null/NaN
+import math
+
 def safe_null(v):
     """Return None for any NaN/null variant, strip .0 from integer-like floats, otherwise return value as-is."""
     if v is None:
@@ -82,8 +84,8 @@ def load_csv_to_db(df):
     for _, row in df.iterrows():
         # Apply strip_dot_zero and safe_null logic to each column depending on its name
         values = [
-            safe_null(strip_dot_zero(v, 'year'), 'year') if 'planting_year' in col and col.startswith('plots') 
-            else safe_null(strip_dot_zero(v), col)
+            safe_null(strip_dot_zero(v, 'year')) if 'planting_year' in col and col.startswith('plots') 
+            else safe_null(strip_dot_zero(v))
             for col, v in zip(df.columns, row)
         ]
 
