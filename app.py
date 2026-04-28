@@ -46,9 +46,9 @@ def safe_null(v):
     if v is None:
         return None
     if isinstance(v, float):
-        if math.isnan(v):
+        if math.isnan(v):  # Handle NaN explicitly
             return None
-        # Convert float to int only if it's a whole number (e.g. 2025.0 -> 2025)
+        # Convert float to int only if it's a whole number (e.g., 2025.0 -> 2025)
         if v == int(v):
             return int(v)  # Leave decimal values (like 0.5) as float
         return v
@@ -62,6 +62,7 @@ def safe_null(v):
                 return int(parts[0])  # Convert to int if it looks like a whole number
         return v
     return v
+    
 # Function to load CSV data into the database
 def load_csv_to_db(df):
     conn = get_connection()
@@ -82,7 +83,7 @@ def load_csv_to_db(df):
     placeholders = ','.join(['%s'] * len(df.columns))
 
     for _, row in df.iterrows():
-        # Apply safe_null to handle any NaN variants
+        # Apply safe_null to handle any NaN variants and clean the year-like columns
         values = [safe_null(v) for v in row]
 
         # Apply strip_dot_zero logic to each column depending on its name
@@ -100,6 +101,7 @@ def load_csv_to_db(df):
     conn.commit()
     cur.close()
     conn.close()
+
 # Function to fetch transformed data from the database
 def get_transformed_data():
     conn = get_connection()
