@@ -28,7 +28,8 @@ def strip_dot_zero(x):
     s = str(x) if x is not None else ''
     if '.' in s:
         parts = s.split('.')
-        if parts[1] == '0' and parts[0].lstrip('-').isdigit():
+        # Only strip .0 if the value is essentially an integer
+        if parts[1] == '0' and parts[0].lstrip('-').isdigit() and float(parts[0]) == int(float(parts[0])):
             return parts[0]  # Strip .0 from integer-like values
     return s  # Leave real decimal values (e.g. 0.5) intact
 
