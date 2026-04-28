@@ -33,12 +33,10 @@ def load_csv_to_db(df):
     cur = conn.cursor()
     df = df.copy()
     df.columns = [c.lower().replace(' ', '_') for c in df.columns]
-    df = df.astype(str)
-    df = df.replace('nan', None)
+    df = df.where(pd.notnull(df), None)
 
-    # Strip .0 only from cells that are truly integer-like (e.g. "1.0" → "1")
-    for col in df.columns:
-        df[col] = df[col].apply(lambda x: strip_dot_zero(x) if x is not None else x)
+    # Convert real NaN/NaT to None (Postgres NULL)
+    df = df.where(pd.notnull(df), None)
 
     cur.execute(f"TRUNCATE {DB_SCHEMA}.prodai")
     cols = ','.join([f'"{c}"' for c in df.columns])
