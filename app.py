@@ -82,12 +82,16 @@ def load_csv_to_db(df):
     placeholders = ','.join(['%s'] * len(df.columns))
 
     for _, row in df.iterrows():
-        # Apply safe_null to handle any NaN variants and clean the year-like columns
+        # Apply safe_null to handle any NaN variants
         values = [safe_null(v) for v in row]
-        
-        # Apply strip_dot_zero only for year-like columns (you can adjust this as necessary for other columns)
-        values = [strip_dot_zero(v, 'year') if 'year' in row.index else strip_dot_zero(v) for v in values]
-        
+
+        # Apply strip_dot_zero logic to each column depending on its name
+        values = [
+            strip_dot_zero(v, 'year') if 'year' in col.lower() else strip_dot_zero(v)
+            for col, v in zip(df.columns, row)
+        ]
+
+        # Execute the insert query
         cur.execute(
             f"INSERT INTO {DB_SCHEMA}.prodai ({cols}) VALUES ({placeholders})",
             values
@@ -96,7 +100,6 @@ def load_csv_to_db(df):
     conn.commit()
     cur.close()
     conn.close()
-    
 # Function to fetch transformed data from the database
 def get_transformed_data():
     conn = get_connection()
