@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import psycopg2
 import io
+import math
 
 # DB connection details from Streamlit secrets
 DB_HOST = st.secrets["DB_HOST"]
@@ -31,6 +32,17 @@ def strip_dot_zero(x):
             return parts[0]
     return s
 
+# Function to safely convert a value to None if it represents a null/NaN
+def safe_null(v):
+    """Return None for any NaN/null variant, otherwise return the value as-is."""
+    if v is None:
+        return None
+    if isinstance(v, float) and math.isnan(v):
+        return None
+    if isinstance(v, str) and v.strip().lower() in ('nan', 'none', 'nat', ''):
+        return None
+    return v
+
 # Function to load CSV data into the database
 def load_csv_to_db(df):
     conn = get_connection()
@@ -40,19 +52,24 @@ def load_csv_to_db(df):
     df = df.copy()
     df.columns = [c.lower().replace(' ', '_') for c in df.columns]
 
-    # Replace NaN with None (Postgres NULL)
+    # Replace NaN with None (Postgres NULL) at the DataFrame level first
     df = df.where(pd.notnull(df), None)
 
     # Clear existing data in the target table
     cur.execute(f"TRUNCATE {DB_SCHEMA}.prodai")
-    
+
     # Insert data row by row
     cols = ','.join([f'"{c}"' for c in df.columns])
     placeholders = ','.join(['%s'] * len(df.columns))
+
     for _, row in df.iterrows():
-        values = [None if v == 'nan' or v is None else v for v in row]
-        cur.execute(f"INSERT INTO {DB_SCHEMA}.prodai ({cols}) VALUES ({placeholders})", values)
-    
+        # Apply safe_null to catch any remaining NaN variants (float nan, string 'nan', etc.)
+        values = [safe_null(v) for v in row]
+        cur.execute(
+            f"INSERT INTO {DB_SCHEMA}.prodai ({cols}) VALUES ({placeholders})",
+            values
+        )
+
     conn.commit()
     cur.close()
     conn.close()
@@ -96,7 +113,7 @@ def main():
 
     if uploaded_file:
         st.info("File uploaded — click Convert to process it.")
-        
+
         # Button to trigger conversion process
         if st.button("Convert", key="convert_btn"):
             with st.spinner("Loading data..."):
