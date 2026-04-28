@@ -73,7 +73,7 @@ def load_csv_to_db(df):
     df.columns = [c.lower().replace(' ', '_') for c in df.columns]
 
     # Replace NaN with None (Postgres NULL) at the DataFrame level first
-    df = df.where(pd.notnull(df), None)
+    df = df.applymap(lambda x: None if (isinstance(x, float) and math.isnan(x)) else x)
 
     # Clear existing data in the target table
     cur.execute(f"TRUNCATE {DB_SCHEMA}.prodai")
@@ -83,7 +83,7 @@ def load_csv_to_db(df):
     placeholders = ','.join(['%s'] * len(df.columns))
 
     for _, row in df.iterrows():
-        # Apply safe_null to handle any NaN variants and clean the year-like columns
+        # Apply safe_null to handle any NaN variants
         values = [safe_null(v) for v in row]
 
         # Apply strip_dot_zero logic to each column depending on its name
