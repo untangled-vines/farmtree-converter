@@ -100,7 +100,7 @@ def load_csv_to_db(df):
     conn.close()
 
 # Function to fetch transformed data from the database
-def get_transformed_data():
+ def get_transformed_data():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(f"SELECT * FROM {DB_SCHEMA}.prodai_transformed")
@@ -110,25 +110,17 @@ def get_transformed_data():
     conn.close()
 
     df = pd.DataFrame(rows, columns=cols)
-    # Don't use astype(str) globally — convert per column carefully
     df = df.where(pd.notnull(df), None)
-    
-    # Convert to string but preserve numeric decimals correctly
+
     def safe_str(v):
         if v is None:
             return ''
         from decimal import Decimal
         if isinstance(v, Decimal):
-            # Normalize: remove trailing zeros but keep meaningful decimals
             return format(v.normalize(), 'f')
         return str(v)
-    
-    try:
-    # pandas 2.1+
-    return df.map(safe_str).replace({'None': '', 'nan': '', '<NA>': ''})
-except AttributeError:
-    # pandas < 2.1 fallback
-    return df.applymap(safe_str).replace({'None': '', 'nan': '', '<NA>': ''})
+
+    return df.apply(lambda col: col.map(safe_str)).replace({'None': '', 'nan': '', '<NA>': ''})
 
 # Function to convert dataframe to CSV format
 def df_to_csv(df):
