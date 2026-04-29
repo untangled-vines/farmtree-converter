@@ -109,12 +109,21 @@ def get_transformed_data():
     cur.close()
     conn.close()
 
-    # Create dataframe from the fetched data
-    df = pd.DataFrame(rows, columns=cols).astype(str)
-    df = df.replace({'None': '', 'nan': '', '<NA>': ''})
-
-    # No need to apply strip_dot_zero function here since data is already cleaned on insert
-    return df
+    df = pd.DataFrame(rows, columns=cols)
+    # Don't use astype(str) globally — convert per column carefully
+    df = df.where(pd.notnull(df), None)
+    
+    # Convert to string but preserve numeric decimals correctly
+    def safe_str(v):
+        if v is None:
+            return ''
+        from decimal import Decimal
+        if isinstance(v, Decimal):
+            # Normalize: remove trailing zeros but keep meaningful decimals
+            return format(v.normalize(), 'f')
+        return str(v)
+    
+    return df.applymap(safe_str).replace({'None': '', 'nan': '', '<NA>': ''}) 
 
 # Function to convert dataframe to CSV format
 def df_to_csv(df):
