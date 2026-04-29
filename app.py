@@ -123,7 +123,12 @@ def get_transformed_data():
             return format(v.normalize(), 'f')
         return str(v)
     
-    return df.applymap(safe_str).replace({'None': '', 'nan': '', '<NA>': ''}) 
+    try:
+    # pandas 2.1+
+    return df.map(safe_str).replace({'None': '', 'nan': '', '<NA>': ''})
+except AttributeError:
+    # pandas < 2.1 fallback
+    return df.applymap(safe_str).replace({'None': '', 'nan': '', '<NA>': ''})
 
 # Function to convert dataframe to CSV format
 def df_to_csv(df):
