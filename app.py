@@ -100,7 +100,7 @@ def load_csv_to_db(df):
     conn.close()
 
 # Function to fetch transformed data from the database
- def get_transformed_data():
+def get_transformed_data():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(f"SELECT * FROM {DB_SCHEMA}.prodai_transformed")
