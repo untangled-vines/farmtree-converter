@@ -109,6 +109,13 @@ def get_transformed_data():
     cur.close()
     conn.close()
 
+    # DEBUG - remove after diagnosis
+    cov_col = [i for i, c in enumerate(cols) if 'CAFSSel02Cov' in c]
+    if cov_col and rows:
+        idx = cov_col[0]
+        sample_val = rows[0][idx]
+        st.write(f"DEBUG → CAFSSel02Cov raw value: `{sample_val}` | type: `{type(sample_val)}`")
+
     df = pd.DataFrame(rows, columns=cols)
     df = df.where(pd.notnull(df), None)
 
